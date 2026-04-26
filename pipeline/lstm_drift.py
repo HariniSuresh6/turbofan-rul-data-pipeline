@@ -88,6 +88,9 @@ def main():
     print("Generating data...")
     X, y = generate_data()
 
+    # =========================
+    # TRAIN / BASE SPLIT
+    # =========================
     split = int(0.7 * len(X))
     X_base, y_base = X[:split], y[:split]
     X_stream = X[split:].copy()
@@ -98,43 +101,51 @@ def main():
     print("Extracting baseline activations...")
     base_act = get_activations(model, X_base)
 
+    # =========================
+    # CONTROLLED BATCHING (FIXED)
+    # =========================
+    num_batches = 5
+    batch_size = len(X_stream) // num_batches
+
     drift_scores = []
-    batch_size = 200
 
     print("\nSimulating real-time drift...\n")
 
-    for i in range(0, len(X_stream), batch_size):
-        batch = X_stream[i:i+batch_size].copy()
+    for batch_idx in range(num_batches):
+        start = batch_idx * batch_size
+        end = start + batch_size
 
-        # 🔥 STRONG + CLEAR DRIFT
-        drift_strength = (i / len(X_stream)) * 5
+        batch = X_stream[start:end].copy()
 
-        batch[:, :, 0] += drift_strength       # sensor drift
-        batch *= (1 + drift_strength)          # scaling drift
+        # =========================
+        # GRADUAL DRIFT (SMOOTH)
+        # =========================
+        drift_strength = (batch_idx / num_batches) * 2   # clean progression
 
-        # 🔥 FIX SHAPE (avoid retracing)
-        if len(batch) < batch_size:
-            continue
+        batch[:, :, 0] += drift_strength        # sensor drift
+        batch *= (1 + drift_strength * 0.5)     # scaling drift (controlled)
 
+        # =========================
+        # ACTIVATIONS + DRIFT
+        # =========================
         curr_act = get_activations(model, batch)
 
         drift = compute_drift(base_act, curr_act)
         drift_scores.append(drift)
 
-        print(f"Batch {i//batch_size + 1} → Drift: {drift:.4f}")
+        print(f"Batch {batch_idx + 1} → Drift: {drift:.4f}")
 
     # =========================
     # SAVE RESULTS
     # =========================
     df = pd.DataFrame({
-        "batch": np.arange(1, len(drift_scores)+1),
+        "batch": np.arange(1, num_batches + 1),
         "drift_score": drift_scores
     })
 
     df.to_csv("drift_results.csv", index=False)
 
-    print("\n✅ Drift results saved (clean, no warnings)")
-
+    print("\n✅ Drift results saved (clean, structured)")
 # ================================
 if __name__ == "__main__":
     main()

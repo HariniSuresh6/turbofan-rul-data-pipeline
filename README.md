@@ -1,22 +1,22 @@
 # turbofan-rul-data-pipeline
 ML Pipeline for Predictive Maintenance with RUL Estimation and Drift-Aware Monitoring
 
-# Overview
+## Overview
 This project builds a scalable data pipeline to predict the Remaining Useful Life (RUL) of turbofan engines and monitor model reliability using activation-based drift detection.
 
-# Features
+## Features
 - LSTM-based RUL prediction
 - Activation-based drift detection (Jensen–Shannon divergence)
 - Batch-wise streaming simulation
 - Interactive dashboard using Streamlit
 
-# Architecture
+## Architecture
 Data → Processing → LSTM Model → Drift Detection → Dashboard
 
-# Tech Stack
+## Tech Stack
 Python, Pandas, NumPy, TensorFlow, PostgreSQL, SQLAlchemy, Streamlit
 
-# Run
+## Run
 pip install -r requirements.txt  
 python pipeline/lstm_drift.py  
 python -m streamlit run dashboard/app.py  
